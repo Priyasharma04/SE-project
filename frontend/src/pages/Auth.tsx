@@ -1,12 +1,16 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText } from "lucide-react";
+import { authAPI } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,22 +21,29 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // TODO: Replace with your actual sign-in API call
-    console.log("Sign in:", { email, password });
-    // Example API call:
-    // const response = await fetch("/api/auth/signin", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ email, password })
-    // });
-    // const data = await response.json();
-    // if (data.success) {
-    //   // Store token and redirect to main app
-    //   localStorage.setItem("token", data.token);
-    //   window.location.href = "/chat";
-    // }
-    
-    setTimeout(() => setIsLoading(false), 1000);
+    try {
+      const response = await authAPI.login(name, password);
+      const { access_token } = response.data;
+      
+      // Store token in localStorage
+      localStorage.setItem('access_token', access_token);
+      
+      toast({
+        title: "Success!",
+        description: "Logged in successfully",
+      });
+      
+      // Redirect to chat page
+      navigate('/chat');
+    } catch (error: any) {
+      toast({
+        title: "Login Failed",
+        description: error.response?.data?.detail || "Invalid credentials",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // BACKEND INTEGRATION: Connect to your registration API
@@ -40,16 +51,36 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // TODO: Replace with your actual sign-up API call
-    console.log("Sign up:", { name, email, password });
-    // Example API call:
-    // const response = await fetch("/api/auth/signup", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ name, email, password })
-    // });
-    
-    setTimeout(() => setIsLoading(false), 1000);
+    try {
+      console.log('Attempting signup with:', { name, email, password: '***' });
+      const response = await authAPI.signup(name, email, password);
+      console.log('Signup successful:', response.data);
+      
+      toast({
+        title: "Account Created!",
+        description: "You can now sign in with your credentials",
+      });
+      
+      // Clear form
+      setName("");
+      setEmail("");
+      setPassword("");
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      console.error('Error response:', error.response);
+      
+      const errorMessage = error.response?.data?.detail || 
+                          error.message || 
+                          "Could not create account";
+      
+      toast({
+        title: "Signup Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // BACKEND INTEGRATION: Connect to Google OAuth
@@ -90,10 +121,10 @@ const Auth = () => {
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="text"
+                    placeholder="Username"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     required
                     className="transition-smooth"
                   />
@@ -123,7 +154,7 @@ const Auth = () => {
                 <div className="space-y-2">
                   <Input
                     type="text"
-                    placeholder="Full Name"
+                    placeholder="Username"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
@@ -143,7 +174,7 @@ const Auth = () => {
                 <div className="space-y-2">
                   <Input
                     type="password"
-                    placeholder="Password"
+                    placeholder="Password (min 8 chars, 1 uppercase, 1 number)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
