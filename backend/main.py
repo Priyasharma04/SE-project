@@ -2,9 +2,12 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Hea
 from fastapi.middleware.cors import CORSMiddleware
 from auth import create_access_token, verify_token, hash_password, verify_password
 from models import UserOut, Token
-from database import users_db, uploads_db, save_users
+from database import users_db, uploads_db, save_users, chats_db, save_chats
 from pipeline import process_paper
+from pydantic import BaseModel
+from typing import List, Optional
 import os, shutil
+import time
 app = FastAPI()
 
 # Log loaded users on startup
@@ -132,3 +135,86 @@ def get_history(current_user: str = Depends(get_current_user)):
         return {"uploaded_files": users_db[current_user]["files"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch history: {str(e)}")
+
+# Pydantic models for chat endpoints
+class MessageModel(BaseModel):
+    id: str
+    role: str
+    content: str
+    timestamp: str
+
+class SaveChatRequest(BaseModel):
+    chat_id: str
+    title: str
+    messages: List[MessageModel]
+    pdf_name: Optional[str] = None
+
+# Save chat history
+@app.post("/chats/save")
+async def save_chat(chat_data: SaveChatRequest, current_user: str = Depends(get_current_user)):
+    try:
+        if current_user not in chats_db:
+            chats_db[current_user] = {}
+        
+        chats_db[current_user][chat_data.chat_id] = {
+            "title": chat_data.title,
+            "messages": [msg.dict() for msg in chat_data.messages],
+            "timestamp": chat_data.messages[-1].timestamp if chat_data.messages else str(time.time()),
+            "pdf_name": chat_data.pdf_name
+        }
+        
+        save_chats(chats_db)
+        return {"status": "success", "message": "Chat saved successfully"}
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to save chat: {str(e)}")
+
+# Get all chats for user
+@app.get("/chats")
+async def get_chats(current_user: str = Depends(get_current_user)):
+    try:
+        user_chats = chats_db.get(current_user, {})
+        
+        # Transform to list format with chat_id included
+        chat_list = []
+        for chat_id, chat_data in user_chats.items():
+            chat_list.append({
+                "id": chat_id,
+                "title": chat_data.get("title", "Untitled Chat"),
+                "lastMessage": chat_data["messages"][-1]["content"][:50] if chat_data.get("messages") else "",
+                "timestamp": chat_data.get("timestamp", ""),
+                "pdf_name": chat_data.get("pdf_name")
+            })
+        
+        # Sort by timestamp (newest first)
+        chat_list.sort(key=lambda x: x["timestamp"], reverse=True)
+        
+        return {"chats": chat_list}
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to fetch chats: {str(e)}")
+
+# Get specific chat messages
+@app.get("/chats/{chat_id}")
+async def get_chat(chat_id: str, current_user: str = Depends(get_current_user)):
+    try:
+        user_chats = chats_db.get(current_user, {})
+        
+        if chat_id not in user_chats:
+            raise HTTPException(status_code=404, detail="Chat not found")
+        
+        chat_data = user_chats[chat_id]
+        return {
+            "chat_id": chat_id,
+            "title": chat_data.get("title", "Untitled Chat"),
+            "messages": chat_data.get("messages", []),
+            "pdf_name": chat_data.get("pdf_name")
+        }
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to fetch chat: {str(e)}")

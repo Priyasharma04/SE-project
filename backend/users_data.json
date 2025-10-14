@@ -3,5 +3,20 @@
     "email": "test123@email.com",
     "password": "$2b$12$SxMLVkco5hlZwPqJ80DveeaX1UWBmZvoddh6eJeZiNIQNg5C50weW",
     "files": []
+  },
+  "testuser123": {
+    "email": "test@example.com",
+    "password": "$2b$12$8h06o/lPx.XjvqLvYXyK9uITluY903Jgga15pZL88yy92lSfdWHFy",
+    "files": []
+  },
+  "test12345": {
+    "email": "tes12345@gmail.com",
+    "password": "$2b$12$LI8veLeybmcihB7bAnROvOJMoqQZiLhA0hTczfIe7QJhDLgq2Q3ZW",
+    "files": []
+  },
+  "test1234": {
+    "email": "test1234@email.com",
+    "password": "$2b$12$Y7HpH.glxNy5afdrZT0rqewfzLURDdN9fKQPYyN6Z/fi98MRZ9b6C",
+    "files": []
   }
 }

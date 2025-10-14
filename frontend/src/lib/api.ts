@@ -39,3 +39,34 @@ export const authAPI = {
     });
   }
 };
+
+export interface Message {
+  id: string;
+  role: string;
+  content: string;
+  timestamp: string;
+}
+
+export interface SaveChatData {
+  chat_id: string;
+  title: string;
+  messages: Message[];
+  pdf_name?: string;
+}
+
+export const chatAPI = {
+  // Save chat history
+  saveChat: async (chatData: SaveChatData) => {
+    return api.post('/chats/save', chatData);
+  },
+
+  // Get all chats for current user
+  getChats: async () => {
+    return api.get('/chats');
+  },
+
+  // Get specific chat by ID
+  getChat: async (chatId: string) => {
+    return api.get(`/chats/${chatId}`);
+  }
+};

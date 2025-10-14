@@ -104,7 +104,7 @@ const Auth = () => {
             <FileText className="w-6 h-6 text-primary-foreground" />
           </div>
           <div>
-            <CardTitle className="text-2xl">PDF Chat Assistant</CardTitle>
+            <CardTitle className="text-2xl">Research Paper </CardTitle>
             <CardDescription>
               Sign in to start chatting with your documents
             </CardDescription>
