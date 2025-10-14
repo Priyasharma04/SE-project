@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Backend API Test</h1>
+    
+    <h2>Test Signup</h2>
+    <form id="signupForm">
+        <div class="form-group">
+            <label>Username:</label>
+            <input type="text" id="signupUsername" value="testuser123" required>
+        </div>
+        <div class="form-group">
+            <label>Email:</label>
+            <input type="email" id="signupEmail" value="test@example.com" required>
+        </div>
+        <div class="form-group">
+            <label>Password:</label>
+            <input type="password" id="signupPassword" value="Test1234" required>
+        </div>
+        <button type="submit">Test Signup</button>
+    </form>
+
+    <h2>Test Login</h2>
+    <form id="loginForm">
+        <div class="form-group">
+            <label>Username:</label>
+            <input type="text" id="loginUsername" value="testuser123" required>
+        </div>
+        <div class="form-group">
+            <label>Password:</label>
+            <input type="password" id="loginPassword" value="Test1234" required>
+        </div>
+        <button type="submit">Test Login</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        function showResult(message, isSuccess) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = isSuccess ? 'success' : 'error';
+            resultDiv.style.display = 'block';
+            console.log(message);
+        }
+
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('signupUsername').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('email', email);
+            formData.append('password', password);
+
+            try {
+                console.log('Sending signup request...');
+                const response = await fetch(`${API_URL}/signup`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                console.log('Response:', data);
+
+                if (response.ok) {
+                    showResult(`Success! User created: ${data.username}`, true);
+                } else {
+                    showResult(`Error: ${data.detail}`, false);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showResult(`Network Error: ${error.message}`, false);
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('password', password);
+
+            try {
+                console.log('Sending login request...');
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                console.log('Response:', data);
+
+                if (response.ok) {
+                    showResult(`Success! Token: ${data.access_token.substring(0, 50)}...`, true);
+                    localStorage.setItem('access_token', data.access_token);
+                } else {
+                    showResult(`Error: ${data.detail}`, false);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showResult(`Network Error: ${error.message}`, false);
+            }
+        });
+    </script>
+</body>
+</html>
